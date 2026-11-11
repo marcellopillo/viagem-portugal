@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Portugal 2026">
+<meta name="theme-color" content="#1d4e89">
+<meta name="robots" content="noindex, nofollow">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.json">
+<title>Portugal & Sevilha · Congresso OMD 2026</title>
+<style>
+body{margin:0;font-family:-apple-system,system-ui,sans-serif;background:#1d4e89;color:#fff;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:env(safe-area-inset-top) 20px env(safe-area-inset-bottom)}
+.box{width:100%;max-width:340px;text-align:center}
+img{width:84px;height:84px;border-radius:20px;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+h1{font-size:22px;margin:16px 0 4px}
+p{opacity:.85;font-size:14px;margin:0 0 20px}
+input{width:100%;box-sizing:border-box;font-size:17px;padding:14px;border-radius:12px;border:0;margin-bottom:10px}
+button{width:100%;font-size:17px;font-weight:600;padding:14px;border-radius:12px;border:0;background:#c4622d;color:#fff}
+label{display:flex;gap:8px;align-items:center;justify-content:center;font-size:14px;margin:12px 0 0;opacity:.9}
+#msg{min-height:20px;font-size:14px;margin-top:12px;color:#ffd7c2}
+</style>
+</head>
+<body>
+<div class="box" id="box">
+  <img src="icon-180.png" alt="">
+  <h1>Portugal & Sevilha</h1>
+  <p>Congresso OMD · 11 a 23/11/2026</p>
+  <form id="f">
+    <input id="pw" type="password" placeholder="Senha" autocomplete="current-password" autocapitalize="off">
+    <button type="submit" id="bt">Abrir</button>
+    <label><input type="checkbox" id="lem" checked style="width:auto;margin:0"> Lembrar neste aparelho</label>
+  </form>
+  <div id="msg"></div>
+</div>
+<script>
+var KEY="viagem-pt-2026-pw";
+function st(){try{return localStorage}catch(e){return null}}
+async function abrir(pw,lembrar){
+  var msg=document.getElementById("msg"); msg.textContent="Abrindo…";
+  try{
+    var r=await fetch("app.enc",{cache:"no-cache"}).catch(function(){return caches.match("app.enc")});
+    if(!r||!r.ok){r=await caches.match("app.enc");}
+    var buf=new Uint8Array(await r.arrayBuffer());
+    var salt=buf.slice(0,16), iv=buf.slice(16,28), ct=buf.slice(28);
+    var base=await crypto.subtle.importKey("raw",new TextEncoder().encode(pw),"PBKDF2",false,["deriveKey"]);
+    var key=await crypto.subtle.deriveKey({name:"PBKDF2",salt:salt,iterations:250000,hash:"SHA-256"},base,{name:"AES-GCM",length:256},false,["decrypt"]);
+    var pt=await crypto.subtle.decrypt({name:"AES-GCM",iv:iv},key,ct);
+    var html=new TextDecoder().decode(pt);
+    var s=st(); if(s){ if(lembrar) s.setItem(KEY,pw); }
+    document.open(); document.write(html); document.close();
+  }catch(e){
+    var s=st(); if(s) s.removeItem(KEY);
+    msg.textContent="Senha incorreta ou sem conexão na primeira abertura.";
+  }
+}
+document.getElementById("f").addEventListener("submit",function(e){e.preventDefault();abrir(document.getElementById("pw").value.trim(),document.getElementById("lem").checked);});
+if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(function(){});}
+var s=st(), salvo=s&&s.getItem(KEY); if(salvo) abrir(salvo,true);
+</script>
+</body>
+</html>
